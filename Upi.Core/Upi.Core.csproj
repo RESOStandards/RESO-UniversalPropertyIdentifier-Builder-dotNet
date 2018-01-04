@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Reso.Upi.Core</AssemblyName>
+    <RootNamespace>Reso.Upi.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="US\national_county.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="US\national_cousub-by-function.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
