@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http.Headers;
 
 namespace Reso.Upi.Core.US
 {
-
+    
     public class Fips
     {
         public List<FipsState> States { get; set; } = new List<FipsState>();
@@ -57,7 +58,6 @@ namespace Reso.Upi.Core.US
         public string CountyCode { get; set; }
         public string CountyName { get; set; }
         public string StatusCode { get; set; }
-        public FipsState State { get; set; }
     }
 
     public class FipsSubCountyEntry
@@ -74,7 +74,8 @@ namespace Reso.Upi.Core.US
     public static class FipsCache
     {
         private const string FipsCountyResource = @"US\national_cousub-by-function.txt";
-        private const string FipsSubCountyResource = @"national_county.txt";
+        private const string FipsSubCountyResource = @"US\national_county.txt";
+        public static readonly string UNVALID = "INVLAID";
 
         public static List<FipsCountyEntry> FipsCodes { get; set; } = new List<FipsCountyEntry>();
         public static List<FipsSubCountyEntry> FipsSubCodes { get; set; } = new List<FipsSubCountyEntry>();
@@ -84,6 +85,75 @@ namespace Reso.Upi.Core.US
         static FipsCache()
         {
             LoadCache();
+        }
+
+        public static FipsCountyEntry GetCounty(string fipsCode)
+        {
+            if (!string.IsNullOrEmpty(fipsCode))
+            {
+                var fipsState = fipsCode.Substring(0, 2);
+                var fipsCounty = fipsCode.Substring(2, 3);
+
+                return FipsCodes.FirstOrDefault(s => s.CountyCode == fipsCounty && s.StateCode == fipsState)
+                       ?? UnknownCounty(fipsCode);
+            }
+
+            return UnknownCounty("Unspecified");
+
+        }
+
+        static FipsCountyEntry UnknownCounty(string countyCode)
+        {
+            return new FipsCountyEntry()
+            {
+                StateName = UNVALID,
+                StateCode = "UNDEFINED",
+                CountyName = UNVALID,
+                CountyCode = countyCode
+            };
+        }
+
+        public static FipsSubCountyEntry GetSubCounty(string subCountyCode)
+        {
+            if (!string.IsNullOrEmpty(subCountyCode))
+            {
+                if (subCountyCode.ToUpper() == "N")
+                    return NotApplicableSubCounty();
+
+                return FipsSubCodes.FirstOrDefault(s => s.SubCountyCode == subCountyCode)
+                       ?? UnknownSubCounty(subCountyCode);
+            }
+
+            return UnknownSubCounty("Unspecified");
+
+        }
+
+        static FipsSubCountyEntry UnknownSubCounty(string subCountyCode)
+        {
+            return new FipsSubCountyEntry()
+            {
+                SubCountyName = UNVALID,
+                SubCountyCode = subCountyCode
+            };
+        }
+
+        private static FipsSubCountyEntry NotApplicableSubCounty()
+        {
+            return new FipsSubCountyEntry()
+            {
+                SubCountyName = "N/A",
+                SubCountyCode = "N"
+            };
+        }
+
+        public static bool IsInvalid(this FipsSubCountyEntry entry)
+        {
+            return entry.SubCountyName == UNVALID;
+        }
+
+        public static bool IsInvalid(this FipsCountyEntry entry)
+        {
+            return entry.CountyName == UNVALID;
         }
 
         static void LoadCache()

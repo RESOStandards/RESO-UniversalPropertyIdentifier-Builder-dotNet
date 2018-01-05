@@ -9,66 +9,134 @@ namespace Reso.Upi.Core.US
     public class UnitedStatesUpi : UniversalPropertyIdentifier, ICountryUpi
     {
         #region ICountryUpi
-        public string CountryName => "United States";
+        public new string CountryName => Country.AsText();
+
+        public new string ToUpi()
+        {
+            return $"US-{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}-{Property}-{PropertyType.ToString()}-{SubProperty}";
+        }
+        public new string Description
+        {
+            get
+            {
+                if (IsValid())
+                {
+                    var builder = new StringBuilder($"UPI: {ToUpi()}\n");
+                    builder.AppendLine($"Country: {CountryName}");
+                    builder.AppendLine($"State: {FipsCounty.StateName}");
+                    builder.AppendLine($"County: {FipsCounty.CountyName}");
+                    builder.AppendLine($"Sub County: {FipsSubCounty.SubCountyName}");
+                    builder.AppendLine($"Property ID: {Property}");
+                    builder.AppendLine($"Property Type: {PropertyType.AsText()}");
+                    builder.AppendLine($"Sub-Property: {SubProperty}");
+
+                    return builder.ToString();
+                }
+                return string.Join("\n", _validationErrors);
+            }
+        }
+        public new bool IsValid()
+        {
+            return !_validationErrors.Any();
+        }
+
         #endregion
 
-        public string FipsStateCode {
-            get => _FipsStateCode;
-            set
-            {
-                if (value == null) throw new ArgumentNullException(nameof(value));
-                _FipsStateCode = FipsCache.FIPS.States.FirstOrDefault(s => s.Code == FipsStateCode)?.Code;
-            }
-        }
+        public string FipsStateCode => FipsCounty.StateCode;
 
-        public string FipsCounty
+        public FipsCountyEntry FipsCounty
         {
-            get => _FipsCounty;
-            set
+            get => _fipsCounty;
+
+            protected set
             {
-                _FipsCounty = _FipsStateCode
+                _fipsCounty = value;
+                if (_fipsCounty.IsInvalid())
+                    _validationErrors.Add($"Invalid SubCounty ({value.CountyCode})");
+            }
+
+        }
+
+        public FipsSubCountyEntry FipsSubCounty {
+            get => _fipsSubCounty;
+            protected set
+            {
+                _fipsSubCounty = value;
+                if (_fipsCounty.IsInvalid())
+                    _validationErrors.Add($"Invalid SubCounty ({value.SubCountyCode})");
             }
         }
-        public string FipsSubCounty { get; set; }
 
-        string _FipsStateCode = "Invalid:''";
-        string _FipsCounty = "Invalid:''";
-        string _FipsSubCounty = "Invalid:''";
+        private FipsCountyEntry _fipsCounty = null;
 
+        private FipsSubCountyEntry _fipsSubCounty = null;
+
+        readonly List<string> _validationErrors = new List<string>();
 
         public UnitedStatesUpi() : base(IsoCountry.US)
         {}
         
-        List<string> ValidationErrors = new List<string>();
-
-        public UnitedStatesUpi(string fipsStateCode, string countyCode, string subCountyCode, string propertyId, PropertyType propertyType, string subPropertyId) : base(IsoCountry.US)
+        public UnitedStatesUpi(string upi): this()
         {
-            FipsStateCode = fipsStateCode; 
-            FipsCounty = countyCode;
-            FipsSubCounty = string.IsNullOrEmpty(subCountyCode)?"N" : subCountyCode;
-            SubCountry = $"{FipsCounty}-{FipsSubCounty}";
-            Property = propertyId.Replace("-", "");
-            SubPropertyType = propertyType;
-            SubProperty = string.IsNullOrEmpty(subPropertyId) ? "N" : subPropertyId;
+            // parse the upi
+            var components = upi.Split('-');
+            if (components.Length == 6)
+            {
+                if (components[0] == IsoCountry.US.ToString())
+                {
+                    SubPropertyType propertyType = SubPropertyType.Unknown;
+
+                    FipsCounty = FipsCache.GetCounty(components[1]);
+                    FipsSubCounty = FipsCache.GetSubCounty(components[2]);
+                    Property = components[3];
+                    var result = System.Enum.TryParse(components[4], out propertyType);
+                    PropertyType = result ? propertyType : SubPropertyType.Unknown;
+                    SubProperty = components[5];
+
+                    base.SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
+
+                    return;
+                }
+            }
+
+            _validationErrors.Add($"Invalid United States UPI: {upi}");
         }
 
-        /// <summary>
-        /// Test the UPI's validity
-        /// NOTE: this is a formatting check
-        /// </summary>
-        /// <returns></returns>
-        public bool IsValid()
+        public UnitedStatesUpi(string fipsCountyCode, string subCountyCode, 
+            string propertyId, SubPropertyType propertyType, string subPropertyId) : base(IsoCountry.US)
         {
-            var state = FipsCache.FIPS.States.FirstOrDefault(s => s.Code == FipsStateCode);
-            var county = state?.Counties.FirstOrDefault(c => c.Code == FipsCounty);
-            var subCounty = _FipsSubCounty == "N" ? "N" : county?.SubCounties.FirstOrDefault(sc => sc.Code == FipsSubCounty).Code;
-            
-            return !string.IsNullOrEmpty(subCounty);
+            //FipsStateCode = fipsStateCode; 
+            FipsCounty = FipsCache.GetCounty(fipsCountyCode);
+            FipsSubCounty = FipsCache.GetSubCounty(subCountyCode.ToOptionalUpiComponent());
+
+            base.SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
+            Property = propertyId.RemoveDashes();
+            PropertyType = propertyType;
+            SubProperty = subPropertyId.ToOptionalUpiComponent();
+        }
+        
+        public static implicit operator UnitedStatesUpi(string upi)
+        {
+            return new UnitedStatesUpi(upi);
+        }
+        public static implicit operator string (UnitedStatesUpi upi)
+        {
+            return upi.ToString();
+        }
+    }
+
+    internal static class StringExtensions
+    {
+        public static string RemoveDashes(this string target)
+        {
+            return target.Replace("-", "");
         }
 
-        public static UnitedStatesUpi Parse(string upi)
+        public static string ToOptionalUpiComponent(this string target)
         {
-            return new UnitedStatesUpi();
+            return string.IsNullOrEmpty(target) ? "N"
+                : target.ToUpper() == "N" ? "N"
+                : target.RemoveDashes();
         }
     }
 }

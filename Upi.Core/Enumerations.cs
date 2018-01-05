@@ -11,8 +11,9 @@ namespace Reso.Upi.Core
         US
     }
 
-    public enum PropertyType
+    public enum SubPropertyType
     {
+        Unknown,
         R,
         S,
         T,
