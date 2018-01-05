@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Reso.Upi.Core.US;
 
@@ -8,20 +10,21 @@ namespace Reso.Upi.Core
 {
     public class UniversalPropertyIdentifier: ICountryUpi
     {
-        private readonly ICountryUpi countryUpi;
+        private readonly ICountryUpi _countryUpi;
+        public dynamic CountrySpecificUpi => _countryUpi;
 
         #region ICountryUpi
 
-        public string CountryName => countryUpi.CountryName;
+        public string CountryName => _countryUpi.CountryName;
 
-        public string ToUpi() => countryUpi.ToUpi();
+        public string ToUpi() => _countryUpi.ToUpi();
 
-        public string Description => countryUpi.Description;
+        public string Description => _countryUpi.Description;
 
-        public bool IsValid() => countryUpi.IsValid();
+        public bool IsValid() => _countryUpi.IsValid();
 
-        #endregion
-        
+
+
         public IsoCountry Country { get; protected  set; }
 
         // defined by the country
@@ -35,6 +38,7 @@ namespace Reso.Upi.Core
 
         public string SubProperty { get; protected set; }
 
+        #endregion
 
         // The basic UPI is defined in a very generic way to be compatible with
         // other countries
@@ -43,23 +47,11 @@ namespace Reso.Upi.Core
             return ToUpi();
         }
 
+        #region Construction
         protected UniversalPropertyIdentifier(string upi)
         {
-            var segments = upi.Split('-');
-            if (segments.Any())
-            {
-                var countryId = segments[0].ToUpper();
-
-                if (IsoCountry.TryParse(countryId, out IsoCountry isoCountry))
-                {
-                    countryUpi = (ICountryUpi) Activator.CreateInstance(isoCountry.UpiType(), upi);
-                    return;
-                }
-
-                throw new ApplicationException($"{upi} is not defined by supported country. Supported countries are: {string.Join(", ", Enum.GetNames(typeof(IsoCountry)))}");
-            }
-
-            throw new ApplicationException($"{upi} is not recignized as a valid UPI");
+            _countryUpi = upi.ParseUpi().ToCountryUpi() 
+                ?? new InvalidCountry($"{upi} is not recognized as a valid UPI. Valid Countries are {string.Join(", ", Enum.GetNames(typeof(IsoCountry)))}");
         }
 
         protected UniversalPropertyIdentifier(IsoCountry country)
@@ -76,6 +68,16 @@ namespace Reso.Upi.Core
             SubProperty = subProperty;
         }
 
+        #endregion
+
+        #region static
+
+        public static UniversalPropertyIdentifier Parse(string upi)
+        {
+            return new UniversalPropertyIdentifier(upi);
+        }
+
+        #region Implicit
         public static implicit operator UniversalPropertyIdentifier(string upi)
         {
             return new UniversalPropertyIdentifier(upi);
@@ -84,6 +86,9 @@ namespace Reso.Upi.Core
         {
             return upi.ToString();
         }
+        #endregion
+
+        #endregion
 
     }
 

@@ -6,16 +6,17 @@ using System.Text;
 
 namespace Reso.Upi.Core.US
 {
-    public class UnitedStatesUpi : UniversalPropertyIdentifier, ICountryUpi
+    public sealed class UnitedStatesUpi : CountryUpi
     {
-        #region ICountryUpi
+        #region ICountryUpi Overrides
         public new string CountryName => Country.AsText();
 
-        public new string ToUpi()
+        public override string ToUpi()
         {
             return $"US-{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}-{Property}-{PropertyType.ToString()}-{SubProperty}";
         }
-        public new string Description
+
+        public override string Description
         {
             get
             {
@@ -35,7 +36,7 @@ namespace Reso.Upi.Core.US
                 return string.Join("\n", _validationErrors);
             }
         }
-        public new bool IsValid()
+        public override bool IsValid()
         {
             return !_validationErrors.Any();
         }
@@ -48,18 +49,17 @@ namespace Reso.Upi.Core.US
         {
             get => _fipsCounty;
 
-            protected set
+            set
             {
                 _fipsCounty = value;
                 if (_fipsCounty.IsInvalid())
                     _validationErrors.Add($"Invalid SubCounty ({value.CountyCode})");
             }
-
         }
 
         public FipsSubCountyEntry FipsSubCounty {
             get => _fipsSubCounty;
-            protected set
+            set
             {
                 _fipsSubCounty = value;
                 if (_fipsCounty.IsInvalid())
@@ -73,36 +73,32 @@ namespace Reso.Upi.Core.US
 
         readonly List<string> _validationErrors = new List<string>();
 
+        #region Construction
         public UnitedStatesUpi() : base(IsoCountry.US)
         {}
+
+        public UnitedStatesUpi(List<string> segments): this()
+        {
+            // this constructor is for the case where the upi was parsed, and the upi was
+            // determined to be United States
+            InitializeUpi(segments);
+        }
         
         public UnitedStatesUpi(string upi): this()
         {
             // parse the upi
-            var components = upi.Split('-');
-            if (components.Length == 6)
+            var components = upi.ParseUpi();
+            if (components.Count() == 6)
             {
-                if (components[0] == IsoCountry.US.ToString())
-                {
-                    SubPropertyType propertyType = SubPropertyType.Unknown;
-
-                    FipsCounty = FipsCache.GetCounty(components[1]);
-                    FipsSubCounty = FipsCache.GetSubCounty(components[2]);
-                    Property = components[3];
-                    var result = System.Enum.TryParse(components[4], out propertyType);
-                    PropertyType = result ? propertyType : SubPropertyType.Unknown;
-                    SubProperty = components[5];
-
-                    base.SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
-
-                    return;
-                }
+                InitializeUpi(components);
             }
 
             _validationErrors.Add($"Invalid United States UPI: {upi}");
+
         }
 
-        public UnitedStatesUpi(string fipsCountyCode, string subCountyCode, 
+        public UnitedStatesUpi(
+            string fipsCountyCode, string subCountyCode, 
             string propertyId, SubPropertyType propertyType, string subPropertyId) : base(IsoCountry.US)
         {
             //FipsStateCode = fipsStateCode; 
@@ -114,15 +110,43 @@ namespace Reso.Upi.Core.US
             PropertyType = propertyType;
             SubProperty = subPropertyId.ToOptionalUpiComponent();
         }
-        
+
+        #endregion
+
+        #region Private
+        private void InitializeUpi(List<string> components)
+        {
+            if (components[0] == IsoCountry.US.ToString())
+            {
+                SubPropertyType propertyType = SubPropertyType.Unknown;
+
+                FipsCounty = FipsCache.GetCounty(components[1]);
+                FipsSubCounty = FipsCache.GetSubCounty(components[2]);
+                Property = components[3];
+                var result = System.Enum.TryParse(components[4], out propertyType);
+                PropertyType = result ? propertyType : SubPropertyType.Unknown;
+                SubProperty = components[5];
+
+                SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
+
+                return;
+            }
+        }
+
+        #endregion
+
+        #region Implicit
+
         public static implicit operator UnitedStatesUpi(string upi)
         {
             return new UnitedStatesUpi(upi);
         }
-        public static implicit operator string (UnitedStatesUpi upi)
+
+        public static implicit operator string(UnitedStatesUpi upi)
         {
             return upi.ToString();
         }
+        #endregion
     }
 
     internal static class StringExtensions

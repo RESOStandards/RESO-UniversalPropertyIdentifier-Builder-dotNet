@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using Reso.Upi.Core.US;
 
@@ -40,5 +42,35 @@ namespace Reso.Upi.Core
             }
         }
     }
-    
+
+    public static class StringExtensions
+    {
+        /// <summary>
+        /// Parse he segments of the UPI
+        /// </summary>
+        /// <param name="upi"></param>
+        /// <returns></returns>
+        public static List<string> ParseUpi(this string upi)
+        {
+            var segments = upi.ToUpper().Split('-').Select(s => s.Trim()).ToList();
+            return segments;
+        }
+
+        public static ICountryUpi ToCountryUpi(this List<string> segments)
+        {
+            if (segments.Any())
+            {
+                var countryId = segments[0];
+
+                if (IsoCountry.TryParse(countryId, out IsoCountry isoCountry))
+                {
+                    var countryUpi = (ICountryUpi)Activator.CreateInstance(isoCountry.UpiType(), segments);
+                    return countryUpi;
+                }
+
+            }
+            return null;
+        }
+    }
+
 }
