@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bessett.SmartConsole;
 using Reso.Upi.Core;
+using Reso.Upi.Core.US;
 
 namespace Reso.Upi.Cli.Tasks
 {
@@ -13,7 +14,6 @@ namespace Reso.Upi.Cli.Tasks
     {
         public override TaskResult StartTask()
         {
-
             string[] sampleUpis =
             {
                 "US-04015-N -11022331-R-N",
@@ -42,6 +42,17 @@ namespace Reso.Upi.Cli.Tasks
                     return TaskResult.Exception(ex);
                 }
             }
+
+            var upiByCountry = new UnitedStatesUpi()
+            {
+                FipsCounty = FipsCache.GetCounty("04013"),
+                FipsSubCounty = FipsCache.GetSubCounty("N"),
+                Property = "508-41-188",
+                PropertyType = SubPropertyTypeCode.B,
+                SubProperty = "65A"
+
+            };
+            Console.WriteLine($"\n{upiByCountry.Description}");
 
             return TaskResult.Complete();
 

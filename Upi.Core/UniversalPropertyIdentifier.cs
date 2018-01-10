@@ -22,21 +22,19 @@ namespace Reso.Upi.Core
         public string Description => _countryUpi.Description;
 
         public bool IsValid() => _countryUpi.IsValid();
-
-
-
-        public IsoCountry Country { get; protected  set; }
+        
+        public IsoCountryCode Country { get; protected  set; }
 
         // defined by the country
-        public string SubCountry { get; protected set; }
+        public string SubCountry { get; set; }
 
         // defined by the sub country
-        public string Property { get; protected set; }
+        public string Property { get;  set; }
 
         // RESO-defined sub property type
-        public SubPropertyType PropertyType { get; protected set; }
+        public SubPropertyTypeCode PropertyType { get; set; }
 
-        public string SubProperty { get; protected set; }
+        public string SubProperty { get; set; }
 
         #endregion
 
@@ -51,15 +49,16 @@ namespace Reso.Upi.Core
         protected UniversalPropertyIdentifier(string upi)
         {
             _countryUpi = upi.ParseUpi().ToCountryUpi() 
-                ?? new InvalidCountry($"{upi} is not recognized as a valid UPI. Valid Countries are {string.Join(", ", Enum.GetNames(typeof(IsoCountry)))}");
+                ?? new InvalidCountry($"{upi} is not recognized as a valid UPI. Valid Countries are {string.Join(", ", Enum.GetNames(typeof(IsoCountryCode)))}");
         }
 
-        protected UniversalPropertyIdentifier(IsoCountry country)
+        protected UniversalPropertyIdentifier(IsoCountryCode country)
         {
             Country = country;
+            _countryUpi = country.ToCountryUpi();
         }
 
-        protected UniversalPropertyIdentifier(IsoCountry country, string subCountry, string property, SubPropertyType subPropertyType, string subProperty)
+        protected UniversalPropertyIdentifier(IsoCountryCode country, string subCountry, string property, SubPropertyTypeCode subPropertyType, string subProperty)
         {
             Country = country;
             SubCountry = subCountry;

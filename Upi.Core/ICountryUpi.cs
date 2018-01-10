@@ -9,19 +9,21 @@ namespace Reso.Upi.Core.US
         string Description { get; }
         bool IsValid();
 
-        IsoCountry Country { get; }
+        IsoCountryCode Country { get; }
         string SubCountry { get; }
         string Property { get; }
-        SubPropertyType PropertyType { get;  }
+        SubPropertyTypeCode PropertyType { get;  }
         string SubProperty { get;  }
     }
 
-    public class InvalidCountry : CountryUpi
+    public sealed class InvalidCountry : CountryUpi
     {
         public override bool IsValid()
         {
             return false;
         }
+
+        public override string SubCountry { get { return "INVALID";  } }
 
         public InvalidCountry(string invalidNotes)
         {
@@ -36,23 +38,25 @@ namespace Reso.Upi.Core.US
         protected CountryUpi()
         { }
 
-        protected CountryUpi(IsoCountry country)
+        protected CountryUpi(IsoCountryCode country)
         {
             Country = country;
         }
+
+        protected readonly List<string> ValidationErrors = new List<string>();
 
         public string CountryName { get; protected set; }
 
         public virtual string Description { get; protected set; }
 
-        public IsoCountry Country { get; protected set; }
-        public string SubCountry { get; protected set; }
-        public string Property { get; protected set; }
+        public IsoCountryCode Country { get; protected set; }
+        public abstract string SubCountry { get;  }
+        public string Property { get;  set; }
 
         // RESO-defined sub property type
-        public SubPropertyType PropertyType { get; protected set; }
+        public SubPropertyTypeCode PropertyType { get;  set; }
 
-        public string SubProperty { get; protected set; }
+        public string SubProperty { get;  set; }
 
         public abstract bool IsValid();
 

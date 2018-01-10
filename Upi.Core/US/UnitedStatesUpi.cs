@@ -13,7 +13,7 @@ namespace Reso.Upi.Core.US
 
         public override string ToUpi()
         {
-            return $"US-{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}-{Property}-{PropertyType.ToString()}-{SubProperty}";
+            return $"US-{FipsCounty?.StateCode}{FipsCounty?.CountyCode}-{FipsSubCounty?.SubCountyCode}-{Property}-{PropertyType.ToString()}-{SubProperty}";
         }
 
         public override string Description
@@ -23,27 +23,29 @@ namespace Reso.Upi.Core.US
                 if (IsValid())
                 {
                     var builder = new StringBuilder($"UPI: {ToUpi()}\n");
-                    builder.AppendLine($"Country: {CountryName}");
-                    builder.AppendLine($"State: {FipsCounty.StateName}");
-                    builder.AppendLine($"County: {FipsCounty.CountyName}");
-                    builder.AppendLine($"Sub County: {FipsSubCounty.SubCountyName}");
+                    builder.AppendLine($"Country: {CountryName ?? "Undefined"} ");
+                    builder.AppendLine($"State: {FipsCounty?.StateName ?? "Undefined"}");
+                    builder.AppendLine($"County: {FipsCounty?.CountyName ?? "Undefined"}");
+                    builder.AppendLine($"Sub County: {FipsSubCounty?.SubCountyName ?? "Undefined"}");
                     builder.AppendLine($"Property ID: {Property}");
-                    builder.AppendLine($"Property Type: {PropertyType.AsText()}");
+                    builder.AppendLine($"Property Type: {PropertyType.AsText() ?? "Undefined"}");
                     builder.AppendLine($"Sub-Property: {SubProperty}");
 
                     return builder.ToString();
                 }
-                return string.Join("\n", _validationErrors);
+                return string.Join("\n", ValidationErrors);
             }
         }
         public override bool IsValid()
         {
-            return !_validationErrors.Any();
+            return !ValidationErrors.Any();
         }
 
         #endregion
 
-        public string FipsStateCode => FipsCounty.StateCode;
+        public override string SubCountry => $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
+
+        public string FipsStateCode => FipsCounty?.StateCode;
 
         public FipsCountyEntry FipsCounty
         {
@@ -53,7 +55,7 @@ namespace Reso.Upi.Core.US
             {
                 _fipsCounty = value;
                 if (_fipsCounty.IsInvalid())
-                    _validationErrors.Add($"Invalid SubCounty ({value.CountyCode})");
+                    ValidationErrors.Add($"Invalid SubCounty ({value.CountyCode})");
             }
         }
 
@@ -63,18 +65,17 @@ namespace Reso.Upi.Core.US
             {
                 _fipsSubCounty = value;
                 if (_fipsCounty.IsInvalid())
-                    _validationErrors.Add($"Invalid SubCounty ({value.SubCountyCode})");
+                    ValidationErrors.Add($"Invalid SubCounty ({value.SubCountyCode})");
             }
         }
-
+        
         private FipsCountyEntry _fipsCounty = null;
 
         private FipsSubCountyEntry _fipsSubCounty = null;
 
-        readonly List<string> _validationErrors = new List<string>();
 
         #region Construction
-        public UnitedStatesUpi() : base(IsoCountry.US)
+        public UnitedStatesUpi() : base(IsoCountryCode.US)
         {}
 
         public UnitedStatesUpi(List<string> segments): this()
@@ -93,19 +94,18 @@ namespace Reso.Upi.Core.US
                 InitializeUpi(components);
             }
 
-            _validationErrors.Add($"Invalid United States UPI: {upi}");
+            ValidationErrors.Add($"Invalid United States UPI: {upi}");
 
         }
 
         public UnitedStatesUpi(
             string fipsCountyCode, string subCountyCode, 
-            string propertyId, SubPropertyType propertyType, string subPropertyId) : base(IsoCountry.US)
+            string propertyId, SubPropertyTypeCode propertyType, string subPropertyId) : base(IsoCountryCode.US)
         {
             //FipsStateCode = fipsStateCode; 
             FipsCounty = FipsCache.GetCounty(fipsCountyCode);
             FipsSubCounty = FipsCache.GetSubCounty(subCountyCode.ToOptionalUpiComponent());
 
-            base.SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
             Property = propertyId.RemoveDashes();
             PropertyType = propertyType;
             SubProperty = subPropertyId.ToOptionalUpiComponent();
@@ -116,20 +116,27 @@ namespace Reso.Upi.Core.US
         #region Private
         private void InitializeUpi(List<string> components)
         {
-            if (components[0] == IsoCountry.US.ToString())
+            if (components.Count()==6)
+                if (components[0] == IsoCountryCode.US.ToString())
+                {
+                    SubPropertyTypeCode propertyType = SubPropertyTypeCode.Unknown;
+
+                    FipsCounty = FipsCache.GetCounty(components[1]);
+                    FipsSubCounty = FipsCache.GetSubCounty(components[2]);
+                    Property = components[3];
+                    var result = System.Enum.TryParse(components[4], out propertyType);
+                    PropertyType = result ? propertyType : SubPropertyTypeCode.Unknown;
+                    SubProperty = components[5];
+
+
+                }
+                else
+                {
+                    ValidationErrors.Add($"First component of US UPI must begin with 'US'  [{components.ToUpi()}]");
+                }
+            else
             {
-                SubPropertyType propertyType = SubPropertyType.Unknown;
-
-                FipsCounty = FipsCache.GetCounty(components[1]);
-                FipsSubCounty = FipsCache.GetSubCounty(components[2]);
-                Property = components[3];
-                var result = System.Enum.TryParse(components[4], out propertyType);
-                PropertyType = result ? propertyType : SubPropertyType.Unknown;
-                SubProperty = components[5];
-
-                SubCountry = $"{FipsCounty.StateCode}{FipsCounty.CountyCode}-{FipsSubCounty.SubCountyCode}";
-
-                return;
+                ValidationErrors.Add($"US UPI must have 6 components [{components.ToUpi()}]");
             }
         }
 
@@ -156,11 +163,15 @@ namespace Reso.Upi.Core.US
             return target.Replace("-", "");
         }
 
+        public static string ToUpi(this List<string> target)
+        {
+                return  string.Join("-", target);
+        }
         public static string ToOptionalUpiComponent(this string target)
         {
             return string.IsNullOrEmpty(target) ? "N"
                 : target.ToUpper() == "N" ? "N"
-                : target.RemoveDashes();
+                    : target.RemoveDashes();
         }
     }
 }

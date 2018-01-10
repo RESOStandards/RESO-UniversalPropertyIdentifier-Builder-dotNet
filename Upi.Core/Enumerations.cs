@@ -6,12 +6,12 @@ using System.Text;
 namespace Reso.Upi.Core
 {
     // Supported ISO countries. This list will grow.
-    public enum IsoCountry
+    public enum IsoCountryCode
     {
         US
     }
 
-    public enum SubPropertyType
+    public enum SubPropertyTypeCode
     {
         Unknown,
         R,

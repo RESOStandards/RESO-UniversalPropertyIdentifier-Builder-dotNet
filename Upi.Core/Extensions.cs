@@ -7,43 +7,43 @@ using Reso.Upi.Core.US;
 
 namespace Reso.Upi.Core
 {
-    public static class IsoExtensions
+    internal static class IsoExtensions
     {
-        public static string AsText(this IsoCountry country)
+        public static string AsText(this IsoCountryCode country)
         {
             switch (country)
             {
-                case IsoCountry.US: return "United States";
+                case IsoCountryCode.US: return "United States";
                 default: return "";
             }
         }
 
-        public static Type UpiType(this IsoCountry country)
+        public static Type UpiType(this IsoCountryCode country)
         {
             switch (country)
             {
-                case IsoCountry.US: return typeof(UnitedStatesUpi);
+                case IsoCountryCode.US: return typeof(UnitedStatesUpi);
                 default: return null;
             }
         }
     }
 
-    public static class ResoExtensions
+    internal static class ResoExtensions
     {
-        public static string AsText(this SubPropertyType propertyType)
+        public static string AsText(this SubPropertyTypeCode propertyType)
         {
             switch (propertyType)
             {
-                case SubPropertyType.B: return "Building";
-                case SubPropertyType.S: return "Cooperative/Apartment";
-                case SubPropertyType.R: return "Real Property";
-                case SubPropertyType.T: return "Temporary Designation";
-                default: return SubPropertyType.Unknown.ToString();
+                case SubPropertyTypeCode.B: return "Building";
+                case SubPropertyTypeCode.S: return "Cooperative/Apartment";
+                case SubPropertyTypeCode.R: return "Real Property";
+                case SubPropertyTypeCode.T: return "Temporary Designation";
+                default: return SubPropertyTypeCode.Unknown.ToString();
             }
         }
     }
 
-    public static class StringExtensions
+    internal static class StringExtensions
     {
         /// <summary>
         /// Parse he segments of the UPI
@@ -62,7 +62,7 @@ namespace Reso.Upi.Core
             {
                 var countryId = segments[0];
 
-                if (IsoCountry.TryParse(countryId, out IsoCountry isoCountry))
+                if (IsoCountryCode.TryParse(countryId, out IsoCountryCode isoCountry))
                 {
                     var countryUpi = (ICountryUpi)Activator.CreateInstance(isoCountry.UpiType(), segments);
                     return countryUpi;
@@ -70,6 +70,11 @@ namespace Reso.Upi.Core
 
             }
             return null;
+        }
+        public static ICountryUpi ToCountryUpi(this IsoCountryCode isoCountry)
+        {
+            var countryUpi = (ICountryUpi)Activator.CreateInstance(isoCountry.UpiType());
+            return countryUpi;
         }
     }
 
