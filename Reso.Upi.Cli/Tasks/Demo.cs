@@ -12,6 +12,11 @@ namespace Reso.Upi.Cli.Tasks
     [NoConfirmation]
     public class Demo : ConsoleTask
     {
+        private string TargetName(UniversalPropertyIdentifier upi)
+        {
+            return upi.CountryName;
+        }
+
         public override TaskResult StartTask()
         {
             string[] sampleUpis =
@@ -57,13 +62,16 @@ namespace Reso.Upi.Cli.Tasks
                 IsoCountryCode.US, "06075-N","144-90-8822"
                 );
             Console.WriteLine($"\n{nakedUpi2}");
-
-
-
-            // Build a United States UPI
-
+            
             var testUpi = new UniversalPropertyIdentifier("US-42049-49888-1213666-R-N");
-            Console.WriteLine($"\n{testUpi.CountrySpecificUpi.FipsSubCounty.SubCountyName}");
+            var test2 = (UnitedStatesUpi) testUpi.CountrySpecificUpi;
+            Console.WriteLine($"\nCountry-Specific UPI type detected {test2.CountryName} ({testUpi.CountrySpecificUpi.GetType().ToString()}) ");
+
+            var countryName = TargetName("US-36061-N-010237502R1-S-113");
+
+            Console.Write(countryName);
+
+            // Build a United States UPIs
 
             var upiByCountry = new UnitedStatesUpi()
             {
@@ -97,6 +105,10 @@ namespace Reso.Upi.Cli.Tasks
             };
 
             Console.WriteLine($"\n{upiByCountry3.Description}");
+
+            var upiByCountry4 = new UnitedStatesUpi("US-42049-49888-1213666-R-N");
+
+            Console.WriteLine($"\n{upiByCountry4.Description}");
 
             return TaskResult.Complete();
 

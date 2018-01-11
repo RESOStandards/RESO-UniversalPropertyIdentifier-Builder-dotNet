@@ -4,8 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Reso.Upi.Core</AssemblyName>
     <RootNamespace>Reso.Upi.Core</RootNamespace>
-    <AssemblyVersion>1.0.0.39</AssemblyVersion>
-    <FileVersion>1.0.0.39</FileVersion>
+    <AssemblyVersion>1.0.0.40</AssemblyVersion>
+    <FileVersion>1.0.0.40</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

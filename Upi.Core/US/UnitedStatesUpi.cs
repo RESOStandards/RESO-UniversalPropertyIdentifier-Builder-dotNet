@@ -90,13 +90,7 @@ namespace Reso.Upi.Core.US
         {
             // parse the upi
             var components = upi.ParseUpi();
-            if (components.Count() == 6)
-            {
-                InitializeUpi(components);
-            }
-
-            ValidationErrors.Add($"Invalid United States UPI: {upi}");
-
+            InitializeUpi(components);
         }
 
         public UnitedStatesUpi(string fipsCountyCode, string propertyId) : base(IsoCountryCode.US)
@@ -142,8 +136,6 @@ namespace Reso.Upi.Core.US
                     var result = System.Enum.TryParse(components[4], out propertyType);
                     PropertyType = result ? propertyType : SubPropertyTypeCode.N;
                     SubProperty = components[5];
-
-
                 }
                 else
                 {
