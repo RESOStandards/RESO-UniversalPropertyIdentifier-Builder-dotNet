@@ -6,7 +6,6 @@ using System.Net.Http.Headers;
 
 namespace Reso.Upi.Core.US
 {
-    
     public class Fips
     {
         public List<FipsState> States { get; set; } = new List<FipsState>();
@@ -69,13 +68,18 @@ namespace Reso.Upi.Core.US
         public string SubCountyCode { get; set; }
         public string SubCountyName { get; set; }
         public string FunctionalStatus { get; set; }
+
+        public static FipsSubCountyEntry Undefined()
+        {
+            return FipsCache.NotApplicableSubCounty();
+        }
     }
 
     public static class FipsCache
     {
         private const string FipsCountyResource = @"US\national_cousub-by-function.txt";
         private const string FipsSubCountyResource = @"US\national_county.txt";
-        public static readonly string UNVALID = "INVLAID";
+        public static readonly string INVALID = "INVLAID";
 
         public static List<FipsCountyEntry> FipsCodes { get; set; } = new List<FipsCountyEntry>();
         public static List<FipsSubCountyEntry> FipsSubCodes { get; set; } = new List<FipsSubCountyEntry>();
@@ -106,9 +110,9 @@ namespace Reso.Upi.Core.US
         {
             return new FipsCountyEntry()
             {
-                StateName = UNVALID,
+                StateName = INVALID,
                 StateCode = "UNDEFINED",
-                CountyName = UNVALID,
+                CountyName = INVALID,
                 CountyCode = countyCode
             };
         }
@@ -132,12 +136,12 @@ namespace Reso.Upi.Core.US
         {
             return new FipsSubCountyEntry()
             {
-                SubCountyName = UNVALID,
+                SubCountyName = INVALID,
                 SubCountyCode = subCountyCode
             };
         }
 
-        private static FipsSubCountyEntry NotApplicableSubCounty()
+        internal static FipsSubCountyEntry NotApplicableSubCounty()
         {
             return new FipsSubCountyEntry()
             {
@@ -148,12 +152,12 @@ namespace Reso.Upi.Core.US
 
         public static bool IsInvalid(this FipsSubCountyEntry entry)
         {
-            return entry.SubCountyName == UNVALID;
+            return entry.SubCountyName == INVALID;
         }
 
         public static bool IsInvalid(this FipsCountyEntry entry)
         {
-            return entry.CountyName == UNVALID;
+            return entry.CountyName == INVALID;
         }
 
         static void LoadCache()

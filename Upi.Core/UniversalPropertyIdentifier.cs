@@ -46,25 +46,32 @@ namespace Reso.Upi.Core
         }
 
         #region Construction
-        protected UniversalPropertyIdentifier(string upi)
+        public UniversalPropertyIdentifier(string upi)
         {
             _countryUpi = upi.ParseUpi().ToCountryUpi() 
                 ?? new InvalidCountry($"{upi} is not recognized as a valid UPI. Valid Countries are {string.Join(", ", Enum.GetNames(typeof(IsoCountryCode)))}");
         }
 
-        protected UniversalPropertyIdentifier(IsoCountryCode country)
+        public UniversalPropertyIdentifier(IsoCountryCode country)
         {
             Country = country;
             _countryUpi = country.ToCountryUpi();
         }
 
-        protected UniversalPropertyIdentifier(IsoCountryCode country, string subCountry, string property, SubPropertyTypeCode subPropertyType, string subProperty)
+        public UniversalPropertyIdentifier(IsoCountryCode country, string subCountry, string property, SubPropertyTypeCode subPropertyType, string subProperty) 
+            : this(country, subCountry, property)
         {
             Country = country;
             SubCountry = subCountry;
             Property = property;
             PropertyType = subPropertyType;
             SubProperty = subProperty;
+        }
+
+        public UniversalPropertyIdentifier(IsoCountryCode country, string subCountry, string property): this(country)
+        {
+            SubCountry = subCountry;
+            Property = property;
         }
 
         #endregion
@@ -90,6 +97,5 @@ namespace Reso.Upi.Core
         #endregion
 
     }
-
 
 }

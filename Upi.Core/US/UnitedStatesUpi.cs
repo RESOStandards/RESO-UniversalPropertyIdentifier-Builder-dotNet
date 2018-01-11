@@ -13,7 +13,7 @@ namespace Reso.Upi.Core.US
 
         public override string ToUpi()
         {
-            return $"US-{FipsCounty?.StateCode}{FipsCounty?.CountyCode}-{FipsSubCounty?.SubCountyCode}-{Property}-{PropertyType.ToString()}-{SubProperty}";
+            return $"US-{FipsCounty?.StateCode}{FipsCounty?.CountyCode}-{FipsSubCounty?.SubCountyCode ?? "N"}-{Property.RemoveDashes()}-{PropertyType.ToString()}-{SubProperty}";
         }
 
         public override string Description
@@ -59,7 +59,8 @@ namespace Reso.Upi.Core.US
             }
         }
 
-        public FipsSubCountyEntry FipsSubCounty {
+        public FipsSubCountyEntry FipsSubCounty
+        {
             get => _fipsSubCounty;
             set
             {
@@ -67,7 +68,7 @@ namespace Reso.Upi.Core.US
                 if (_fipsCounty.IsInvalid())
                     ValidationErrors.Add($"Invalid SubCounty ({value.SubCountyCode})");
             }
-        }
+        } 
         
         private FipsCountyEntry _fipsCounty = null;
 
@@ -98,8 +99,22 @@ namespace Reso.Upi.Core.US
 
         }
 
+        public UnitedStatesUpi(string fipsCountyCode, string propertyId) : base(IsoCountryCode.US)
+        {
+            FipsCounty = FipsCache.GetCounty(fipsCountyCode);
+            Property = propertyId;
+        }
+
+        public UnitedStatesUpi( string fipsCountyCode, string subCountyCode, string propertyId) : base(IsoCountryCode.US)
+        {
+            //FipsStateCode = fipsStateCode; 
+            FipsCounty = FipsCache.GetCounty(fipsCountyCode);
+            FipsSubCounty = FipsCache.GetSubCounty(subCountyCode.ToOptionalUpiComponent());
+
+            Property = propertyId;
+        }
         public UnitedStatesUpi(
-            string fipsCountyCode, string subCountyCode, 
+            string fipsCountyCode, string subCountyCode,
             string propertyId, SubPropertyTypeCode propertyType, string subPropertyId) : base(IsoCountryCode.US)
         {
             //FipsStateCode = fipsStateCode; 
@@ -119,13 +134,13 @@ namespace Reso.Upi.Core.US
             if (components.Count()==6)
                 if (components[0] == IsoCountryCode.US.ToString())
                 {
-                    SubPropertyTypeCode propertyType = SubPropertyTypeCode.Unknown;
+                    SubPropertyTypeCode propertyType = SubPropertyTypeCode.N;
 
                     FipsCounty = FipsCache.GetCounty(components[1]);
                     FipsSubCounty = FipsCache.GetSubCounty(components[2]);
                     Property = components[3];
                     var result = System.Enum.TryParse(components[4], out propertyType);
-                    PropertyType = result ? propertyType : SubPropertyTypeCode.Unknown;
+                    PropertyType = result ? propertyType : SubPropertyTypeCode.N;
                     SubProperty = components[5];
 
 
@@ -160,7 +175,7 @@ namespace Reso.Upi.Core.US
     {
         public static string RemoveDashes(this string target)
         {
-            return target.Replace("-", "");
+            return target?.Replace("-", "");
         }
 
         public static string ToUpi(this List<string> target)

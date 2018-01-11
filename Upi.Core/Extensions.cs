@@ -38,7 +38,7 @@ namespace Reso.Upi.Core
                 case SubPropertyTypeCode.S: return "Cooperative/Apartment";
                 case SubPropertyTypeCode.R: return "Real Property";
                 case SubPropertyTypeCode.T: return "Temporary Designation";
-                default: return SubPropertyTypeCode.Unknown.ToString();
+                default: return SubPropertyTypeCode.N.ToString();
             }
         }
     }

@@ -54,9 +54,9 @@ namespace Reso.Upi.Core.US
         public string Property { get;  set; }
 
         // RESO-defined sub property type
-        public SubPropertyTypeCode PropertyType { get;  set; }
+        public SubPropertyTypeCode PropertyType { get; set; } = SubPropertyTypeCode.R;
 
-        public string SubProperty { get;  set; }
+        public string SubProperty { get; set; } = "N";
 
         public abstract bool IsValid();
 

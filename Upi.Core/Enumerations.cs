@@ -13,7 +13,7 @@ namespace Reso.Upi.Core
 
     public enum SubPropertyTypeCode
     {
-        Unknown,
+        N,
         R,
         S,
         T,
